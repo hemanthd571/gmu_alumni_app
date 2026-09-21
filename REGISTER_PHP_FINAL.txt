@@ -1,0 +1,93 @@
+<?php
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+require_once '../../includes/db_config.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    exit;
+}
+
+$data = json_decode(file_get_contents('php://input'), true);
+
+// Validate required fields
+if (
+    empty($data['name']) || 
+    empty($data['email']) || 
+    empty($data['password']) ||
+    empty($data['usn'])
+) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Missing required fields (name, email, password, usn)']);
+    exit;
+}
+
+try {
+    // 1. Check if email or USN already exists
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE email_id = ? OR usn = ?");
+    $stmt->execute([$data['email'], $data['usn']]);
+    
+    if ($stmt->rowCount() > 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'User with this Email or USN already exists']);
+        exit;
+    }
+
+    // 2. Insert new user
+    // REMOVED 'role' column as requested
+    $sql = "INSERT INTO users (
+                name, 
+                email_id, 
+                password, 
+                usn, 
+                branch, 
+                year_of_graduation, 
+                is_active, 
+                is_approved,
+                created_at
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, 0, 0, NOW()
+            )";
+            
+    $stmt = $pdo->prepare($sql);
+    
+    $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
+    $department = $data['department'] ?? null;
+    $batch = $data['batch'] ?? null;
+    
+    $result = $stmt->execute([
+        $data['name'],
+        $data['email'],
+        $passwordHash,
+        $data['usn'],
+        $department, // Maps to 'branch'
+        $batch       // Maps to 'year_of_graduation'
+    ]);
+
+    if ($result) {
+        http_response_code(201);
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Registration successful. Please wait for SPOC approval.'
+        ]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Failed to register user']);
+    }
+
+} catch (PDOException $e) {
+    error_log("Registration Error: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+}
+?>

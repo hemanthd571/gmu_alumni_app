@@ -1,0 +1,121 @@
+<?php
+// Enable error reporting for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// FIX: Absolute path to db_config.php to avoid "No such file" errors
+// Adjust 'alumni' if your folder name is different
+$configPath = 'C:/xampp_ss/htdocs/alumni/includes/db_config.php';
+
+if (!file_exists($configPath)) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Config file not found at: ' . $configPath]);
+    exit;
+}
+
+require_once $configPath;
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    exit;
+}
+
+$input = file_get_contents('php://input');
+$data = json_decode($input, true);
+
+if (!$data) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
+    exit;
+}
+
+// Validate required fields
+if (
+    empty($data['name']) || 
+    empty($data['email']) || 
+    empty($data['password']) ||
+    empty($data['usn'])
+) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Missing required fields (name, email, password, usn)']);
+    exit;
+}
+
+try {
+    // 1. Check if email or USN already exists
+    // Note: ensure 'email_id' and 'usn' columns exist in your users table
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE email_id = ? OR usn = ?");
+    $stmt->execute([$data['email'], $data['usn']]);
+    
+    if ($stmt->rowCount() > 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'User with this Email or USN already exists']);
+        exit;
+    }
+
+    // 2. Insert new user
+    // We attempt to insert into the columns you likely have.
+    // If 'is_approved' column is missing in DB, this query will fail.
+    // Ensure you ran the ALTER TABLE SQL command to add 'usn', 'branch', 'year_of_graduation', 'is_approved'.
+    $sql = "INSERT INTO users (
+                name, 
+                email_id, 
+                password, 
+                usn, 
+                branch, 
+                year_of_graduation, 
+                is_active, 
+                is_approved,
+                created_at
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, 0, 0, NOW()
+            )";
+            
+    $stmt = $pdo->prepare($sql);
+    
+    $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
+    $department = $data['department'] ?? null;
+    $batch = $data['batch'] ?? null;
+    
+    $result = $stmt->execute([
+        $data['name'],
+        $data['email'],
+        $passwordHash,
+        $data['usn'],
+        $department, // Maps to 'branch'
+        $batch       // Maps to 'year_of_graduation'
+    ]);
+
+    if ($result) {
+        http_response_code(201);
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Registration successful. Please wait for SPOC approval.'
+        ]);
+    } else {
+        http_response_code(500);
+        $errorInfo = $stmt->errorInfo();
+        echo json_encode(['success' => false, 'message' => 'Database Insert Failed: ' . $errorInfo[2]]);
+    }
+
+} catch (PDOException $e) {
+    error_log("Registration Error: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'SQL Error: ' . $e->getMessage()]);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'General Error: ' . $e->getMessage()]);
+}
+?>
