@@ -1,6 +1,24 @@
 <?php
 // Universal Database configuration (Supports Production & Local XAMPP)
 
+// Global fix for Apache Authorization header stripping
+if (empty($_SERVER['HTTP_AUTHORIZATION'])) {
+    if (function_exists('getallheaders')) {
+        $requestHeaders = array_change_key_case(getallheaders(), CASE_LOWER);
+        if (isset($requestHeaders['authorization'])) {
+            $_SERVER['HTTP_AUTHORIZATION'] = $requestHeaders['authorization'];
+        } elseif (isset($requestHeaders['x-authorization'])) {
+            $_SERVER['HTTP_AUTHORIZATION'] = $requestHeaders['x-authorization'];
+        }
+    }
+    if (empty($_SERVER['HTTP_AUTHORIZATION']) && isset($_SERVER['HTTP_X_AUTHORIZATION'])) {
+        $_SERVER['HTTP_AUTHORIZATION'] = $_SERVER['HTTP_X_AUTHORIZATION'];
+    }
+    if (empty($_SERVER['HTTP_AUTHORIZATION']) && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $_SERVER['HTTP_AUTHORIZATION'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
+}
+
 $connectionAttempts = [
     // 1. Production Database Credentials
     [

@@ -48,7 +48,8 @@ class ApiService {
       final token = await _getToken();
       final headers = <String, dynamic>{};
       if (token != null) {
-        headers['Authorization'] = token;
+        headers['Authorization'] = 'Bearer $token';
+        headers['X-Authorization'] = 'Bearer $token';
       }
       
       final response = await _dio.get(
@@ -73,7 +74,7 @@ class ApiService {
     }
   }
 
-  static Future<Response> post(String endpoint, {dynamic data}) async {
+  static Future<Response> post(String endpoint, {dynamic data, bool includeAuth = true}) async {
     try {
       print('📤 API Service: Making POST request');
       print('📤 Endpoint: $endpoint');
@@ -83,8 +84,9 @@ class ApiService {
       print('🔑 Token: ${token != null ? "Present (${token.substring(0, 10)}...)" : "Missing"}');
       
       final headers = <String, dynamic>{};
-      if (token != null) {
-        headers['Authorization'] = token;
+      if (includeAuth && token != null) {
+        headers['Authorization'] = 'Bearer $token';
+        headers['X-Authorization'] = 'Bearer $token';
       }
       
       final response = await _dio.post(
@@ -93,7 +95,8 @@ class ApiService {
         options: Options(headers: headers),
       );
       
-      print('✅ POST Response: ${response.statusCode}');
+      print('✅ API Service: Response received');
+      print('✅ Status Code: ${response.statusCode}');
       print('✅ Response Data: ${response.data}');
       
       return response;

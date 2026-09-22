@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 
 class AppConfig {
   // API Configuration - Using your server URL
-  // static const String baseUrl = 'https://leap.gmu.ac.in/alumni';
-  static const String baseUrl =
-      'http://172.21.3.247/alumni'; // Local Testing IP
+  static const String baseUrl = 'https://leap.gmu.ac.in/alumni';
+  // static const String baseUrl = 'http://172.21.3.247/alumni'; // Local Testing IP
   static const String apiUrl = '$baseUrl/api';
   // Colors matching website theme
   static const Color primaryColor = Color(0xFF5B1F1F);

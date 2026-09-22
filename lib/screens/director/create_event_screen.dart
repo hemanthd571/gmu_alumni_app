@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../../config/app_config.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/event_model.dart';
+import '../../services/api_service.dart';
 
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({super.key});
@@ -148,7 +147,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       _isLoading = true;
     });
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final eventDateTime = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
@@ -189,23 +187,19 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
 
     try {
-      final response = await http.post(
-        Uri.parse('${AppConfig.apiUrl}/director/create_event.php'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${authProvider.token}',
-        },
-        body: json.encode({
+      final response = await ApiService.post(
+        '/director/create_event.php',
+        data: {
           'title': _titleController.text.trim(),
           'description': _descController.text.trim(),
           'location': _locationController.text.trim(),
           'event_date': eventDateTime.toIso8601String(),
           if (endDateTime != null) 'end_date': endDateTime.toIso8601String(),
           'priority': _selectedPriority,
-        }),
+        },
       );
 
-      final data = json.decode(response.body);
+      final data = response.data;
 
       if (response.statusCode == 200 && data['success']) {
         if (mounted) {

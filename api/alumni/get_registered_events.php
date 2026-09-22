@@ -11,13 +11,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../includes/db_config.php';
 
-$headers = getallheaders();
-$authHeader = $headers['Authorization'] ?? (isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '');
+// Robust header extraction across Apache / Nginx / FastCGI
+$authHeader = '';
+if (function_exists('getallheaders')) {
+    $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+    if (!empty($headers['authorization'])) {
+        $authHeader = $headers['authorization'];
+    }
+}
+if (empty($authHeader)) {
+    if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+    } elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
+}
+
 $token = '';
 if (strpos($authHeader, 'Bearer ') === 0) {
     $token = substr($authHeader, 7);
 } else {
-    $token = $authHeader;
+    $token = trim($authHeader);
 }
 
 if (empty($token)) {

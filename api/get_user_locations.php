@@ -15,15 +15,15 @@ function getBaseUrl() {
 try {
     // First, check if profile_visibility column exists
     $checkColumn = $pdo->query("SHOW COLUMNS FROM users LIKE 'profile_visibility'");
-    $hasVisibility = $checkColumn->rowCount() > 0;
-    
-    // Build the base query
     $query = "
         SELECT 
             u.id,
             u.name,
             u.profile_picture,
-            u.usn,
+            u.usn,    $hasVisibility = $checkColumn->rowCount() > 0;
+    
+    // Build the base query
+
             u.latitude,
             u.longitude
         FROM users u

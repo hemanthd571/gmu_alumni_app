@@ -54,7 +54,7 @@ try {
         $ids = json_decode($event['registered_alumni_ids'], true);
         if (is_array($ids) && count($ids) > 0) {
             $inQuery = implode(',', array_fill(0, count($ids), '?'));
-            $userStmt = $pdo->prepare("SELECT id, name, email_id, usn, branch, year_of_graduation as batch, phone_number as phone, designation as current_position, institute FROM users WHERE id IN ($inQuery)");
+            $userStmt = $pdo->prepare("SELECT id, name, email_id, usn, branch, year_of_graduation as batch, phone_number as phone FROM users WHERE id IN ($inQuery)");
             $userStmt->execute($ids);
             
             $users = $userStmt->fetchAll(PDO::FETCH_ASSOC);

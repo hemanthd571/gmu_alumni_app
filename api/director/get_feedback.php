@@ -29,7 +29,7 @@ try {
     // The feedback.user_id column might contain the string USN or the numeric ID.
     $query = "
         SELECT f.id, f.user_id as submitter_identifier, f.event_id, f.rating, f.feedback_text, f.video_audio_path as video_path, f.created_at,
-               u.name, u.profile_picture, u.usn, u.branch, u.year_of_graduation as batch, u.phone_number as phone, u.designation as current_position, u.institute
+               u.name, u.profile_picture, u.usn, u.branch, u.year_of_graduation as batch, u.phone_number as phone
         FROM feedback f
         LEFT JOIN users u ON f.user_id = u.usn OR f.user_id = CAST(u.id AS CHAR)
     ";

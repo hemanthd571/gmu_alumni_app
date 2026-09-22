@@ -28,7 +28,7 @@ if (empty($token)) {
 
 try {
     // 1. Identify Authenticated Alumni AND fetch their details
-    $stmt = $pdo->prepare("SELECT id, name, branch, batch FROM users WHERE auth_token = ? AND is_active = 1");
+    $stmt = $pdo->prepare("SELECT id, name, branch, year_of_graduation FROM users WHERE auth_token = ? AND is_active = 1");
     $stmt->execute([$token]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -41,7 +41,7 @@ try {
     $alumniId = $user['id'];
     $alumniName = $user['name'] ?? 'Unknown';
     $alumniBranch = $user['branch'] ?? 'Unknown';
-    $alumniBatch = $user['batch'] ?? 'Unknown';
+    $alumniBatch = $user['year_of_graduation'] ?? 'Unknown';
 
     $input = file_get_contents('php://input');
     $data = json_decode($input, true);

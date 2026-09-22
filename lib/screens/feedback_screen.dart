@@ -169,7 +169,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       final String feedbackJson = jsonEncode(feedbackData);
 
       FormData formData = FormData.fromMap({
-        'user_id': (user.usn != null && user.usn!.trim().isNotEmpty) ? user.usn : user.id,
+        'user_id': user.id,
         'rating': _rating,
         'feedback_text': feedbackJson,
         if (widget.eventId != null) 'event_id': widget.eventId,
@@ -183,7 +183,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         ));
       }
 
-      final response = await ApiService.post('/feedback/submit.php', data: formData);
+      print('Submitting formData: ${formData.fields}');
+
+      final response = await ApiService.post('/feedback/submit.php', data: formData, includeAuth: false);
+
+      print('Response status: ${response.statusCode}');
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         authProvider.markFeedbackSubmitted();

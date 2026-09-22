@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:provider/provider.dart';
 import '../config/app_config.dart';
-import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 
 class FeedbackEventListScreen extends StatefulWidget {
   const FeedbackEventListScreen({super.key});
@@ -49,25 +46,20 @@ class _FeedbackEventListScreenState extends State<FeedbackEventListScreen> {
 
   Future<void> _fetchEvents() async {
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiUrl}/alumni/get_registered_events.php'),
-        headers: {
-          'Authorization': 'Bearer ${authProvider.token}',
-        },
-      );
+      final response = await ApiService.get('/alumni/get_registered_events.php');
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success']) {
+        final data = response.data;
+        if (data is Map && data['success'] == true) {
+          final listData = data['data'] ?? [];
           setState(() {
-            _events = data['data'];
-            _filteredEvents = data['data'];
+            _events = listData;
+            _filteredEvents = listData;
             _isLoadingEvents = false;
           });
         } else {
           setState(() {
-            _eventsError = data['message'];
+            _eventsError = (data is Map ? data['message'] : null) ?? 'Failed to load events';
             _isLoadingEvents = false;
           });
         }
@@ -274,7 +266,7 @@ class _FeedbackEventListScreenState extends State<FeedbackEventListScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppConfig.primaryColor.withOpacity(0.1),
+                  color: AppConfig.primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: AppConfig.primaryColor),
@@ -307,7 +299,7 @@ class _FeedbackEventListScreenState extends State<FeedbackEventListScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(

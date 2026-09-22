@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:dio/dio.dart';
 
 import '../../config/app_config.dart';
-import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 
 class ScanEventQrScreen extends StatefulWidget {
   const ScanEventQrScreen({super.key});
@@ -59,19 +57,14 @@ class _ScanEventQrScreenState extends State<ScanEventQrScreen> {
 
   Future<void> _registerForEvent(int eventId) async {
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final response = await http.post(
-        Uri.parse('${AppConfig.apiUrl}/alumni/register_event.php'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${authProvider.token}',
-        },
-        body: json.encode({
+      final response = await ApiService.post(
+        '/alumni/register_event.php',
+        data: {
           'event_id': eventId,
-        }),
+        },
       );
 
-      final data = json.decode(response.body);
+      final data = response.data;
 
       if (response.statusCode == 200 && data['success']) {
         setState(() {
@@ -94,7 +87,15 @@ class _ScanEventQrScreenState extends State<ScanEventQrScreen> {
         _showErrorDialog(data['message'] ?? 'Failed to register for the event');
       }
     } catch (e) {
-      _showErrorDialog('Network error: $e');
+      String errorMessage = e.toString();
+      if (e is DioException && e.response?.data != null) {
+        if (e.response?.data is Map) {
+          errorMessage = (e.response?.data['message'] ?? e.response?.data.toString()).toString();
+        } else {
+          errorMessage = e.response?.data.toString() ?? 'Unknown error';
+        }
+      }
+      _showErrorDialog('Server error: $errorMessage');
     }
   }
 
